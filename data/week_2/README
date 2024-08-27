@@ -1,0 +1,16 @@
+The file 'root_data_christie_2023.csv' is data collected by Christie et al. 2023. It was obtained from dryad: https://datadryad.org/stash/dataset/doi:10.5061/dryad.b5mkkwhkg and was published in the paper: "Resurrected seeds from herbarium specimens reveal rapid evolution of drought resistance in a selfing annual" by Christie et al., published in 2023 in the American Journal of Botany. 
+
+Christie et al. identify the columns as:
+
+cone_ID: cone (greenhouse pot) identifier
+population: concise population name
+generation: generation (ancestor, descendant)
+maternal_line: factor indicating maternal line
+treatment: experimental treatment (dry, wet)
+fertilizer: quantity of water-releasable fertilizer (corresponds to treatment)
+position: randomized cone position within experimental array
+rack: factor indicating greenhouse rack
+root_mass: root biomass in grams
+veg_mass: above-ground vegetative biomass in grams
+floral_mass: floral biomass in grams (when applicable)
+total_biomass: total biomass in grams (root biomass + vegetative biomass + floral biomass)
