@@ -9,7 +9,7 @@
 
 
 
-# African wild dogs have on of the highest hunting success rates,
+# African wild dogs have one of the highest hunting success rates,
 # at least among cursorial predators. They are successful on about 85%
 # of hunts. You are going to the field to observe 10 wild dog hunts.
 # Simulate a series of 10 independent hunts.
