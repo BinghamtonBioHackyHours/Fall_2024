@@ -3,9 +3,17 @@
 
 #You're a wildlife researcher studying a particular species of squirrels in a large forest. Each day, you observe this species of squirrels as it searches for acorns. Based on past observations, you know that each squirrel has a 67% chance of finding an acorn on a given search attempt. You decide to see how successful your squirrels are in collecting acorns over the course of 30 attempts. Simulate 50 days of squirrel observations where squirrels try to find acorns 30 times a day.
 
+#On how many days did they collect more than 20 nuts?
+
+
 #How about another one?
 
 #You are studying a rare species of bird that only lands on a specific island. You set up camp for a few weeks and record how many birds land in an hour. The rate at which they land is a little unpredictable, but previous research suggests approximately 7 birds land per hour. Let's simulate this event to see how often you might expect a different number of bird landings in any given hour over 150 hours.
+
+#Calculate the probability of three birds landing in an hour
+
+##What is the probability you would get more than 7 birds landing in an hour?
+
 
 # The Mean as a Linear Model ----------------------------------------------
 
@@ -57,6 +65,7 @@ set.seed(5) # allows us to create reproducible results when writing code that in
 
 #What about ANOVA? We use ANOVA to test for the differences in means of multiple groups. Let's see if we can write that into our linear model framework.
 
+##Let's tie it back to the deer example! ANOVA and t-tests have the assumption that variance is equal across groups, let's compare if it comes out differently if the assumption is met perfectly.
 
 # The Linear Model --------------------------------------------------------
 
