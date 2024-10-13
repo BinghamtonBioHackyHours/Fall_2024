@@ -1,0 +1,102 @@
+---
+format: typst
+---
+
+The general linear model:
+
+$$
+\begin{align*}
+y_i &\sim Normal(\mu_i, \sigma)\\
+\mu_i &= \beta_o + x_i\beta_1
+\end{align*}
+$$
+
+
+
+Simulate from the model and draw x from a standard normal distribution:
+
+$$
+\begin{align*}
+y_i &\sim Normal(\mu_i, \sigma)\\
+\mu_i &= \beta_o + x_i\beta_1\\
+\beta_0 &= 0.5\\
+\beta_1 &= 0.5\\
+\sigma &= 0.75
+\end{align*}
+$$
+
+
+Generalized linear models have:  
+  
+*1. A response distribution *  
+*2. A linear function trying to predict the response from the predictors*  
+*3. A link function that maps the linear prediction to a parameter in the response distribution.  *  
+  
+If we call the link function $g()$, the general linear model looks like:  
+
+$$
+\begin{align*}
+y_i &\sim Normal(\mu_i, \sigma)\\
+g(\mu_i) &= \beta_0 + x_i\beta_1\\
+\end{align*}
+$$
+
+
+In this case we use the identity link function (think just multiplying by 1). So the general linear model is a *generalized* linear model with a normal response distribution and an identity link.  
+  
+  
+How do we bring Allie's lizard example into the linear model framework since it 
+doesn't have normal residuals? We could use a binomial response distribution and the logit link function:  
+
+$$
+\begin{align*}
+y_i &\sim Binomial(1, p_i)\\
+logit(p) &= \beta_0
+\end{align*}
+$$
+
+
+What is a logit? First turn probability into odds:
+
+$$
+odds = \frac{p}{1-p}
+$$
+
+Next we take the log of the odds and get the logit:  
+
+  
+$$
+logit(p) = log(\frac{p}{1-p})
+$$
+
+
+Allies lizard example with size.
+
+$$
+\begin{align*}
+dive_i &\sim Binomial(1, p_i)\\
+logit(p_i) &= \beta_0 + size_i\beta_1\\
+\end{align*}
+$$
+
+
+
+
+The model for germination as a function of area:
+
+$$
+\begin{align*}
+germ_i &\sim Binomial(1, p_i)\\
+logit(p_i) &= \beta_0 + area_i\beta_1
+\end{align*}
+$$
+
+
+Let's add in the crosses now. This works by indexing the intercept so that there is a unique intercept for each cross.
+
+$$
+\begin{align*}
+germ_i &\sim Binomial(1, p_i)\\
+logit(p_i) &= \beta_{0[cross_i]} + area_i\beta_1\\
+\end{align*}
+$$
