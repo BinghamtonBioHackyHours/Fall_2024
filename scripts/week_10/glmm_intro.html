@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.45">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>glmm_intro</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="glmm_intro_files/libs/clipboard/clipboard.min.js"></script>
+<script src="glmm_intro_files/libs/quarto-html/quarto.js"></script>
+<script src="glmm_intro_files/libs/quarto-html/popper.min.js"></script>
+<script src="glmm_intro_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="glmm_intro_files/libs/quarto-html/anchor.min.js"></script>
+<link href="glmm_intro_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="glmm_intro_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="glmm_intro_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="glmm_intro_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="glmm_intro_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="what-are-multilevel-mixed-effects-hierarchical-etc-models" class="level1">
+<h1>What are multilevel (mixed effects, hierarchical, etc) models</h1>
+<p>There are many, often conflicting, definitions for these terms. For the time being let’s think about multilevel models as a model where the parameters, at one level of the model, are themselves modeled in another level.</p>
+<p>Just a reminder, of our <strong>boring</strong> single level model:</p>
+<p><span class="math display">\[
+\begin{align*}
+y_i &amp;\sim Normal(\mu_i, \sigma)\\
+\mu_i &amp;= \alpha + \beta x_i
+\end{align*}
+\]</span></p>
+<p>Where <span class="math inline">\(\alpha\)</span> is the intercept. We can interpret this as the value of <span class="math inline">\(\mu\)</span> when <span class="math inline">\(x=0\)</span>. Since this is often nonsense, biologically, we can center the predictor by subtracting the mean, this will allow us to interpret the intercept as the expected value of <span class="math inline">\(y\)</span> at the mean of the predictor.</p>
+<p><span class="math inline">\(\beta\)</span> then is the slope, i.e.&nbsp;for a one unit increase in <span class="math inline">\(x\)</span> there is a <span class="math inline">\(\beta\)</span> increase in <span class="math inline">\(y\)</span>.</p>
+<p>In the multilevel model, <span class="math inline">\(\alpha\)</span> and/or <span class="math inline">\(\beta\)</span> are now going to be modeled at a second level in the model. In the case where we model the intercept (i.e.&nbsp;a <strong>varying intercepts</strong> model), we would have something like this:</p>
+<p><span class="math display">\[
+\begin{align*}
+y_{i} &amp;\sim Normal(\mu_i, \sigma)\\
+\mu_i &amp;= \alpha_{j[i]} + \beta x_i\\
+\alpha_j &amp;\sim Normal(\overline{\alpha}, \sigma_{\alpha})
+\end{align*}
+\]</span></p>
+</section>
+<section id="constructing-a-multilevel-model-always-be-simulatin." class="level1">
+<h1>Constructing a multilevel model, Always be simulatin’.</h1>
+<p>Let’s begin, as usual, with Allie working her way up a stream in search of <em>Anolis aquaticus</em>.</p>
+<p>As Allie bravely works upstream, she is thinking about her past research on this stream and thinks fondly of her past modeling experiences. She knows that anoles on this stream will dive to escape predators and will spend a certain amount of time underwater that follows the following model:</p>
+<p><span class="math display">\[
+\begin{align*}
+time_i &amp;\sim Normal(\mu_i, .5)\\
+\mu_i &amp;= 3 + .5\times size_i
+\end{align*}
+\]</span></p>
+<p>Let’s simulate from and plot this model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> <span class="dv">3</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> .<span class="dv">5</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>sigma <span class="ot">&lt;-</span> .<span class="dv">5</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>size <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> a <span class="sc">+</span> b<span class="sc">*</span>size</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>time <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n, mu, sigma)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(time <span class="sc">~</span> size, <span class="at">pch =</span> <span class="dv">20</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">a =</span> <span class="dv">3</span>, <span class="at">b =</span> .<span class="dv">5</span>, <span class="at">col =</span> <span class="st">"red"</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="glmm_intro_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Allie is interested if these findings are unique to this stream, or if it can be generalized to the entire population of anoles. So she collects data from 10 different streams and measures how long each anole stays submerged. Let’s read in the data and check it out. Let’s do a quick little plot to see if diving looks correlated with size. (n.b.&nbsp;size is scaled to have a mean of 0 and a standard deviation of 1)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>here() starts at C:/Users/jjk06/OneDrive/Desktop/Fall_2024</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lme4)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: Matrix</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(arm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: MASS</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+arm (Version 1.14-4, built: 2024-4-1)</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Working directory is C:/Users/jjk06/OneDrive/Desktop/Fall_2024/scripts/week_10</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">here</span>(<span class="st">"data/week_10/anoles.csv"</span>))</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       time       size stream
+1  7.229963 -0.2279644      1
+2  4.373232  1.7368367      2
+3  3.418022  2.4811105      2
+4  3.833560  4.1828002      2
+5  4.268472  2.6224930      2
+6  4.826732  1.6155960      2
+7  1.104246  1.2038074      2
+8  4.035799  0.7545001      2
+9  6.027848 -3.0575987      3
+10 5.566972 -2.4251657      3
+11 4.126330 -1.0932539      3
+12 4.656094 -2.1614348      3
+13 6.539130 -1.4403478      3
+14 4.081974 -4.1239566      3
+15 5.795197 -2.7775591      4
+16 8.537208 -1.1057022      4
+17 6.874668 -1.2424904      4
+18 7.537184 -2.9504775      4
+19 7.493881 -2.5275481      4
+20 7.296211 -3.2526583      4
+21 8.864429 -0.3142728      4
+22 7.839176 -2.4111244      4
+23 4.882512 -3.2717415      4
+24 6.473902 -2.1481489      4
+25 6.071518  2.8012365      5
+26 6.192126 -0.9867592      6
+27 7.580954 -2.8083875      6
+28 8.214368 -0.7717230      6
+29 7.699257 -1.4689566      6
+30 6.845821 -2.6960079      6
+31 6.330187 -2.8845041      6
+32 6.960662  3.9877933      7
+33 6.674431  2.2785727      7
+34 3.896639  1.7872477      7
+35 3.810513  2.0295371      7
+36 4.496431  1.1542154      7
+37 5.435885  1.7449216      7
+38 4.957002  1.6299862      7
+39 4.451565  1.5864796      7
+40 5.608672  3.1309392      7
+41 6.047337  3.4659003      7
+42 6.779113 -1.6051009      8
+43 6.153498 -4.0135054      8
+44 8.769552 -2.6108534      8
+45 5.559774 -2.4663349      8
+46 7.995525 -1.9004445      8
+47 4.058093 -1.9327441      8
+48 4.128543  0.5999512      9
+49 6.244645  2.6069285     10
+50 2.971063  2.2137633     10
+51 4.232105  0.2828149     10
+52 2.744944 -0.1548230     10</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(df<span class="sc">$</span>time <span class="sc">~</span> df<span class="sc">$</span>size, <span class="at">pch =</span> <span class="dv">20</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="glmm_intro_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="complete-pooling-no-pooling-partial-pooling" class="level1">
+<h1>Complete Pooling, No Pooling, Partial Pooling</h1>
+<section id="complete-pooling" class="level2">
+<h2 class="anchored" data-anchor-id="complete-pooling">Complete Pooling</h2>
+<p>As the name suggests, we will completely pool the data together, just like we have been doing so far. Here’s the model:</p>
+<p><span class="math display">\[
+\begin{align*}
+time_i &amp;\sim Normal(\mu_i, \sigma)\\
+\mu_i &amp;= \alpha + \beta size_i
+\end{align*}
+\]</span></p>
+<p>Let’s fit it.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>mod_pool <span class="ot">&lt;-</span> <span class="fu">lm</span>(time <span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> size, <span class="at">data =</span> df)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(mod_pool)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>lm(formula = time ~ 1 + size, data = df)
+            coef.est coef.se
+(Intercept)  5.61     0.22  
+size        -0.29     0.10  
+---
+n = 52, k = 2
+residual sd = 1.59, R-Squared = 0.16</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod_pool)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = time ~ 1 + size, data = df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-4.1522 -1.1929 -0.1483  1.1839  3.1640 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)  5.60847    0.22256  25.200  &lt; 2e-16 ***
+size        -0.29246    0.09562  -3.059  0.00357 ** 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1.589 on 50 degrees of freedom
+Multiple R-squared:  0.1576,    Adjusted R-squared:  0.1408 
+F-statistic: 9.355 on 1 and 50 DF,  p-value: 0.003568</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(time <span class="sc">~</span> size, <span class="at">data =</span> df, <span class="at">col =</span> <span class="st">"lavenderblush3"</span>, <span class="at">pch =</span> <span class="dv">20</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">a =</span> <span class="fu">coef</span>(mod_pool)[<span class="dv">1</span>], <span class="at">b =</span> <span class="fu">coef</span>(mod_pool)[<span class="dv">2</span>], <span class="at">col =</span> <span class="st">"darkslateblue"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="glmm_intro_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(df<span class="sc">$</span>time)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="glmm_intro_files/figure-html/unnamed-chunk-4-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>So the complete pooling robot doesn’t have any strong beliefs about the effect of size on diving time. It is fairly confident that smaller lizards dive longer. Does she need to update her thinking on size and predator avoidance? Was the original research an artifact of sampling? Maybe there is an effect of stream and she just happened to sample an outlier stream?</p>
+<p>Let’s try adding stream as a predictor.</p>
+</section>
+<section id="no-pooling" class="level2">
+<h2 class="anchored" data-anchor-id="no-pooling">No Pooling</h2>
+<p>In this case, we will add stream directly into the model, so there will be a separate intercept for each stream. Importantly, there is no information shared between streams in the model:</p>
+<p><span class="math display">\[
+\begin{align*}
+time_i &amp;\sim Normal(\mu_i, \sigma)\\
+\mu_i &amp;= \alpha_{stream[i]} + \beta size_i
+\end{align*}
+\]</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>stream <span class="ot">&lt;-</span> <span class="fu">factor</span>(df<span class="sc">$</span>stream)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(mod_no_pool <span class="ot">&lt;-</span> <span class="fu">lm</span>(time <span class="sc">~</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> stream <span class="sc">+</span> size, <span class="at">data =</span> df))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>lm(formula = time ~ -1 + stream + size, data = df)
+         coef.est coef.se
+stream1  7.34     1.15   
+stream2  2.71     0.56   
+stream3  6.29     0.62   
+stream4  8.20     0.52   
+stream5  4.75     1.24   
+stream6  8.06     0.57   
+stream7  4.16     0.53   
+stream8  7.70     0.63   
+stream9  3.85     1.15   
+stream10 3.46     0.61   
+size     0.47     0.17   
+---
+n = 52, k = 11
+residual sd = 1.15, R-Squared = 0.97</code></pre>
+</div>
+</div>
+<p>The no pooling robot seems fairly confident that there is a positive relationship between size and diving. Maybe Allie’s research was correct on the first stream?</p>
+<p>Let’s try the partial pooling approach.</p>
+</section>
+</section>
+<section id="partial-pooling" class="level1">
+<h1>Partial Pooling</h1>
+<p>Like the name suggests, this approach (the multilevel approach), allows us to have separate groups, but they share information. We do this by forcing the intercepts to come from a common distribution. Here’s the model:</p>
+<p><span class="math display">\[
+\begin{align*}
+time_i &amp;\sim Normal(\mu_i, \sigma)\\
+\mu_i &amp;= \alpha_{stream[i]} + \beta size_i\\
+\alpha_{stream[i]} &amp;\sim Normal(\overline{\alpha}, \sigma_{\alpha})
+\end{align*}
+\]</span></p>
+<p>Let’s look at this model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>mod_p_pool <span class="ot">&lt;-</span> <span class="fu">lmer</span>(time <span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> size <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>stream), <span class="at">data =</span> df)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(mod_p_pool)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>lmer(formula = time ~ 1 + size + (1 | stream), data = df)
+            coef.est coef.se
+(Intercept) 5.66     0.57   
+size        0.23     0.15   
+
+Error terms:
+ Groups   Name        Std.Dev.
+ stream   (Intercept) 1.65    
+ Residual             1.16    
+---
+number of obs: 52, groups: stream, 10
+AIC = 192.6, DIC = 181.8
+deviance = 183.2 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fixef</span>(mod_p_pool)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>(Intercept)        size 
+  5.6626895   0.2339056 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ranef</span>(mod_p_pool)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$stream
+   (Intercept)
+1   1.08193367
+2  -2.29306691
+3   0.05655237
+4   1.91598866
+5  -0.16449758
+6   1.78577031
+7  -0.91635485
+8   1.34472196
+9  -1.11790697
+10 -1.69314066
+
+with conditional variances for "stream" </code></pre>
+</div>
+</div>
+<p>Now we’ve gone to the robot being unsure about what is going on. Let’s do some plotting to think through it.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.1.4     ✔ readr     2.1.5
+✔ forcats   1.0.0     ✔ stringr   1.5.1
+✔ ggplot2   3.5.1     ✔ tibble    3.2.1
+✔ lubridate 1.9.3     ✔ tidyr     1.3.1
+✔ purrr     1.0.2     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ tidyr::expand() masks Matrix::expand()
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+✖ tidyr::pack()   masks Matrix::pack()
+✖ dplyr::select() masks MASS::select()
+✖ tidyr::unpack() masks Matrix::unpack()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span> </span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> size, <span class="at">y =</span> time)) <span class="sc">+</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(stream <span class="sc">~</span> .)</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>base</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="glmm_intro_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Let’s add some lines that represent our no-pooling and partial-pooling models. We will also add a vertical line at 0 for the mean size and a horizontal line for the mean of the stream distribution (since you know the malevolent god in charge of this data, you know that the true mean of the streams is 5!)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> base <span class="sc">+</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">5</span>, <span class="at">color =</span> <span class="st">"grey"</span>) <span class="sc">+</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey"</span>)</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>base</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="glmm_intro_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Well, there are 3 streams where Allie was only able to sample 1 anole, What do we think about that?</p>
+<section id="plot-the-mean-fit-on-each-facet" class="level3">
+<h3 class="anchored" data-anchor-id="plot-the-mean-fit-on-each-facet">Plot the mean fit on each facet</h3>
+<p>We need to extract the intercepts and slopes for each model, and put them in a data frame with streams to add them to ggplot.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>fit_no_pool <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">stream =</span> <span class="fu">factor</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>), <span class="at">b =</span> <span class="fu">coef</span>(mod_no_pool)[<span class="dv">11</span>], <span class="at">a =</span> <span class="fu">coef</span>(mod_no_pool)[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>])</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>fit_p_pool <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">stream =</span> <span class="fu">factor</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>), <span class="at">b =</span> <span class="fu">fixef</span>(mod_p_pool)[<span class="dv">2</span>], <span class="fu">fixef</span>(mod_p_pool)[<span class="dv">1</span>] <span class="sc">+</span> <span class="fu">ranef</span>(mod_p_pool)<span class="sc">$</span>stream)</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(fit_p_pool) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"stream"</span>, <span class="st">"b"</span>, <span class="st">"a"</span>)</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> base <span class="sc">+</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">data =</span> fit_no_pool, <span class="fu">aes</span>(<span class="at">slope =</span> b, <span class="at">intercept =</span> a))</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>base</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="glmm_intro_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This looks pretty good! Actually, it looks almost too good. Check out the three streams that have only one data point. The model has fit those points exactly. If you aren’t paranoid already, this should spark any latent paranoia lurking in your mind.</p>
+<p>Let’s add the mean fit of the partially pooled model to see what’s going on.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>base <span class="sc">+</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">data =</span> fit_p_pool, <span class="fu">aes</span>(<span class="at">slope =</span> b, <span class="at">intercept =</span> a), <span class="at">col =</span> <span class="st">"blue"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="glmm_intro_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>So what is going on here?</p>
+<div>
+
+</div>
+<div class="quarto-layout-panel" data-layout-ncol="2">
+<div class="quarto-layout-row">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<p><img src="data:image/jpeg;base64,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" class="img-fluid"></p>
+</div>
+</div>
+</div>
+<p>If you look at the intercepts of the blue lines (where the blue line crosses the 0 vertical line) they are shrunk toward the true population mean. This means that they are less likely to over fit the data. In the no-pooling model, the streams with more points dominate the calculation of the slope. For the streams with only one point, there is no information about the slope, so they meekly accept the slope calculated for the better observed streams, this means that the intercept is then fit so that the regression line goes through the single point. This causes massive over fitting.</p>
+<p>In the case of the partially pooled model, the streams come from a distribution with mean <span class="math inline">\(\overline{\alpha}\)</span> and a standard deviation of <span class="math inline">\(\sigma_{\alpha}\)</span>. This does two things. First, the intercept of each stream is now a compromise between the data point of that stream and the distribution of streams. The model will penalize stream values that are two far away from the population mean (of streams). Second, we can now use the information in those individual points to estimate the slope. They will still carry less weight than the better observed streams, but we are not throwing away that information. All of this gives us a more conservative model. To get more resolution, Allie will need to do more sampling.</p>
+<p>Allie has also learned that there is considerable variability in behavior between streams. She can start thinking about what would cause this variation. Importantly, the multilevel model let’s her make inferences about the differences between streams where single level models cannot!!</p>
+<p>Let’s try to simulate from these things to get a better understanding!</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
