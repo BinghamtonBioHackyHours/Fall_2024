@@ -2,8 +2,8 @@ This data comes from a re-analysis done by Karrenberg et al. This is one set of 
 
 ## Description of the data
 
-female: mother's id  
-mother.species: species of the mother  
+**female**: mother's id  
+**mother.species**: species of the mother  
 treatment: species that the pollen came from (M.pollen = 1:1 mix of pollen, D.pollen = dioica, L.pollen = Latifolia)  
 normal: count of normal seeds  
 deformed: count of deformed seeds  
