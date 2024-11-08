@@ -1,0 +1,1 @@
+CrossFert_and_PollenComp_180608.R is the analysis done by Sophie Karrenberg for the paper: https://doi.org/10.1111/evo.13652 . cross_fert.R is the analysis worked on by the hacky hours crew to learn about GLMMs.
